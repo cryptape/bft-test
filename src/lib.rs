@@ -10,5 +10,7 @@ pub use crate::whitebox::correctness::test_case;
 pub use crossbeam;
 /// Blackbox testing module.
 pub mod blackbox;
+///
+pub mod error;
 /// WhiteBox testing module.
 pub mod whitebox;

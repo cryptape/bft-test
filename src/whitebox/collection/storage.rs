@@ -108,7 +108,7 @@ impl Storage {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::whitebox::{collection::util::Msg, *};
+    use crate::whitebox::{collection::util::Msg, types::*};
     use rand::random;
 
     fn generate_kb() -> Vec<u8> {

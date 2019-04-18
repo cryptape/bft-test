@@ -1,4 +1,4 @@
-use crate::whitebox::correctness::random::*;
+use crate::whitebox::correctness::util::*;
 use rand::random;
 use std::collections::HashMap;
 

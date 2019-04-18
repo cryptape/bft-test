@@ -1,4 +1,4 @@
-use crate::whitebox::{Address, Hash, Vote, VoteType};
+use crate::whitebox::types::{Address, Hash, Vote, VoteType};
 use lru_cache::LruCache;
 use std::collections::HashMap;
 

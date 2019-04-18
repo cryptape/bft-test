@@ -1,4 +1,4 @@
-use crate::whitebox::*;
+use crate::whitebox::types::*;
 use std::fmt;
 
 ///

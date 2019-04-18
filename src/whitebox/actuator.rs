@@ -1,8 +1,8 @@
+use crate::error::BftError;
 use crate::whitebox::{
-    collection::{storage::*, util::Msg, vote_cache::VoteCache},
+    collection::{storage::Storage, util::Msg, vote_cache::VoteCache},
     correctness::test_case::*,
-    error::BftError,
-    *,
+    types::*,
 };
 
 use rand::{thread_rng, Rng};
