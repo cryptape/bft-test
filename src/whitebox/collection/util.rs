@@ -1,4 +1,4 @@
-use crate::whitebox::{Commit, Feed, Proposal, Status, Vote};
+use crate::whitebox::types::{Commit, Feed, Proposal, Status, Vote};
 use serde_json::to_string;
 use time::Timespec;
 

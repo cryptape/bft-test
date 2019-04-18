@@ -1,8 +1,8 @@
+use crate::error::BftError;
 use crate::whitebox::{
-    collection::{storage::*, util::Msg, vote_cache::VoteCache},
+    collection::{storage::Storage, util::Msg, vote_cache::VoteCache},
     correctness::test_case::*,
-    error::BftError,
-    *,
+    types::*,
 };
 
 use rand::{thread_rng, Rng};
@@ -79,7 +79,6 @@ where
                 self.goto_next_round();
             } else if case == &SHOULD_NOT_COMMIT {
                 if self.function.try_get_commit().is_some() {
-                    // TODO
                     return Err(BftError::CommitInvalid(self.height));
                 }
                 self.goto_next_round();
@@ -94,12 +93,11 @@ where
                     self.function.send(FrameSend::Feed(feed));
                     self.check_proposal()?;
                 } else if proposer < self.authority_list.len() {
-                    let proposal = self.generate_proposal(proposer, self.lock_round, Vec::new());
-                    self.storage_msg(Msg::Proposal(proposal.clone()));
-                    self.function.send(FrameSend::Proposal(proposal));
+                    self.generate_proposal(proposer, self.lock_round, Vec::new());
                 } else {
                     panic!("Proposer index beyond authority list!");
                 }
+
                 self.generate_prevote(prevote);
                 self.check_prevote()?;
                 self.generate_precommit(precommit);
@@ -117,7 +115,7 @@ where
             println!("Do test {:?}", test_name);
             self.proc_test(test_case)?;
         }
-        println!("All test cases success");
+        println!("All test cases pass");
         Ok(())
     }
 
@@ -151,7 +149,7 @@ where
         auth_index: usize,
         lock_round: Option<u64>,
         lock_votes: Vec<Vote>,
-    ) -> Proposal {
+    ) {
         let mut proposal = vec![0, 0, 0, 0, 0, 0];
         while self.byzantine.contains(&proposal) {
             let mut rng = thread_rng();
@@ -161,14 +159,16 @@ where
         }
         self.proposal = proposal.clone();
 
-        Proposal {
+        let proposal = Proposal {
             height: self.height,
             round: self.round,
             content: proposal,
             proposer: self.authority_list[auth_index].clone(),
             lock_round,
             lock_votes,
-        }
+        };
+        self.storage_msg(Msg::Proposal(proposal.clone()));
+        self.function.send(FrameSend::Proposal(proposal));
     }
 
     fn generate_prevote(&mut self, prevote: Vec<u8>) {
@@ -311,8 +311,10 @@ where
     }
 
     fn check_commit(&mut self, commit: Commit) -> BftResult<()> {
-        // TODO
-        if self.byzantine.contains(&commit.result) || self.proposal != commit.result {
+        if self.byzantine.contains(&commit.result)
+            || self.lock_round.is_none()
+            || self.proposal != commit.result
+        {
             return Err(BftError::CommitIncorrect(self.height));
         }
 
