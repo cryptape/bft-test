@@ -196,3 +196,62 @@ impl StepCollector {
         self.step_votes.get(&vote_type).cloned()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn generate_vote(vote_type: VoteType, height: u64, round: u64, voter: Vec<u8>) -> Vote {
+        Vote {
+            height,
+            round,
+            vote_type,
+            proposal: vec![1, 2, 3],
+            voter,
+        }
+    }
+
+    #[test]
+    fn test_get_voteset() {
+        let mut vote_cache = VoteCache::new();
+        vote_cache.add(generate_vote(VoteType::Prevote, 1, 1, vec![0]));
+        vote_cache.add(generate_vote(VoteType::Prevote, 1, 1, vec![1]));
+        vote_cache.add(generate_vote(VoteType::Prevote, 1, 1, vec![2]));
+        vote_cache.add(generate_vote(VoteType::Prevote, 1, 1, vec![3]));
+
+        vote_cache.add(generate_vote(VoteType::Precommit, 1, 2, vec![0]));
+        vote_cache.add(generate_vote(VoteType::Precommit, 1, 2, vec![1]));
+        vote_cache.add(generate_vote(VoteType::Precommit, 1, 2, vec![2]));
+
+        assert_eq!(
+            vote_cache.get_voteset(1, 2, VoteType::Prevote).is_none(),
+            true
+        );
+        assert_eq!(
+            vote_cache.get_voteset(1, 1, VoteType::Precommit).is_none(),
+            true
+        );
+        assert_eq!(
+            vote_cache.get_voteset(1, 1, VoteType::Prevote).is_some(),
+            true
+        );
+        assert_eq!(
+            vote_cache.get_voteset(1, 2, VoteType::Precommit).is_some(),
+            true
+        );
+        assert_eq!(
+            vote_cache
+                .get_voteset(1, 1, VoteType::Prevote)
+                .unwrap()
+                .count,
+            4
+        );
+        assert_eq!(
+            vote_cache
+                .get_voteset(1, 2, VoteType::Precommit)
+                .unwrap()
+                .count,
+            3
+        );
+    }
+}
