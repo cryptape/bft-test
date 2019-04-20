@@ -4,13 +4,12 @@
 
 #![deny(missing_docs)]
 
-/// Re-export test cases.
-pub use crate::whitebox::correctness::test_case;
-/// Re-export crossbeam.
-pub use crossbeam;
 /// Blackbox testing module.
 pub mod blackbox;
 ///
 pub mod error;
 /// WhiteBox testing module.
 pub mod whitebox;
+
+pub use crate::whitebox::correctness::test_case;
+pub use crossbeam::crossbeam_channel;
