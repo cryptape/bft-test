@@ -252,7 +252,7 @@ where
     }
 
     fn check_prevote(&mut self) -> BftResult<()> {
-        let vote = self.reveive_vote(VoteType::Prevote)?;
+        let vote = self.receive_vote(VoteType::Prevote)?;
         let mut clean_flag = true;
 
         if let Some(prevote_set) =
@@ -280,7 +280,7 @@ where
     }
 
     fn check_precommit(&mut self) -> BftResult<()> {
-        let vote = self.reveive_vote(VoteType::Precommit)?;
+        let vote = self.receive_vote(VoteType::Precommit)?;
         if let Some(prevote_set) =
             self.vote_cache
                 .get_voteset(self.height, self.height, VoteType::Prevote)
@@ -350,7 +350,7 @@ where
         })
     }
 
-    fn reveive_vote(&mut self, vote_type: VoteType) -> BftResult<Vote> {
+    fn receive_vote(&mut self, vote_type: VoteType) -> BftResult<Vote> {
         let mut vote;
         match self.function.recv() {
             FrameRecv::Proposal(p) => return Err(BftError::AbnormalProposal(p)),
@@ -410,6 +410,7 @@ where
 
     fn init(&mut self) {
         let init = self.generate_status();
+        self.height += 1;
         self.storage_msg(Msg::Status(init.clone()));
         self.function.send(FrameSend::Status(init));
         self.htime = time::get_time();
