@@ -1,12 +1,18 @@
 use crate::error::BftError;
 use crate::whitebox::{
-    collection::{storage::Storage, util::Msg, vote_cache::VoteCache},
+    collection::{
+        proposal_cache::ProposalCache, storage::Storage, util::Msg, vote_cache::VoteCache,
+    },
     correctness::test_case::*,
     types::*,
 };
 
+// use log::{debug, info};
 use rand::{thread_rng, Rng};
 use time::Timespec;
+
+use std::thread;
+use std::time::Instant;
 
 /// A whitebox testing actuator.
 pub struct Actuator<T> {
@@ -21,13 +27,14 @@ pub struct Actuator<T> {
     byzantine: Vec<Vec<u8>>,
     storage: Storage,
     vote_cache: VoteCache,
-    stime: Timespec,
+    proposal_cache: ProposalCache,
+    stime: Instant,
     htime: Timespec,
 }
 
 impl<T> Actuator<T>
 where
-    T: Support,
+    T: Support + Clone + Send + 'static,
 {
     /// A function to create a new testing acutator.
     pub fn new(
@@ -37,7 +44,7 @@ where
         authority_list: Vec<Address>,
         db_path: &str,
     ) -> Self {
-        Actuator {
+        let actuator = Actuator {
             function,
             height,
             round,
@@ -48,9 +55,23 @@ where
             byzantine: byzantine_proposal(),
             storage: Storage::new(db_path),
             vote_cache: VoteCache::new(),
-            stime: Timespec::new(0, 0),
+            proposal_cache: ProposalCache::new(),
+            stime: Instant::now(),
             htime: Timespec::new(0, 0),
-        }
+        };
+
+        let func = actuator.function.clone();
+        let mut proposal_cache = actuator.proposal_cache.clone();
+        let mut vote_cache = actuator.vote_cache.clone();
+
+        thread::spawn(move || loop {
+            match func.recv() {
+                FrameRecv::Proposal(p) => proposal_cache.add(p),
+                FrameRecv::Vote(v) => vote_cache.add(v),
+            };
+        });
+
+        actuator
     }
 
     /// A function to set a new authority list.
@@ -63,6 +84,7 @@ where
         self.init();
         for case in cases.iter() {
             if case == &SHOULD_COMMIT {
+                thread::sleep(::std::time::Duration::from_millis(100));
                 if let Some(commit) = self.function.try_get_commit() {
                     self.storage_msg(Msg::Commit(commit.clone()));
                     self.check_commit(commit)?;
@@ -78,6 +100,7 @@ where
             } else if case == &NULL_ROUND {
                 self.goto_next_round();
             } else if case == &SHOULD_NOT_COMMIT {
+                thread::sleep(::std::time::Duration::from_micros(100));
                 if self.function.try_get_commit().is_some() {
                     return Err(BftError::CommitInvalid(self.height));
                 }
@@ -104,7 +127,10 @@ where
                 self.check_precommit()?;
             }
         }
-        println!("Total test time; {:?}", time::get_time() - self.stime);
+        println!(
+            "Test success, total test time: {:?}",
+            Instant::now() - self.stime
+        );
         Ok(())
     }
 
@@ -172,13 +198,15 @@ where
     }
 
     fn generate_prevote(&mut self, prevote: Vec<u8>) {
+        println!("{:?}", prevote.clone());
+
         let proposal = if self.lock_proposal.is_none() {
             self.proposal.clone()
         } else {
             self.lock_proposal.clone().unwrap()
         };
 
-        for i in 0..2 {
+        for i in 0..3 {
             if prevote[i] == NORMAL {
                 let vote = Vote {
                     height: self.height,
@@ -218,7 +246,7 @@ where
             self.lock_proposal.clone().unwrap()
         };
 
-        for i in 0..2 {
+        for i in 0..3 {
             if precommit[i] == NORMAL {
                 let vote = Vote {
                     height: self.height,
@@ -253,11 +281,15 @@ where
 
     fn check_prevote(&mut self) -> BftResult<()> {
         let vote = self.receive_vote(VoteType::Prevote)?;
+        println!(
+            "Check prevote at height {:?}, round {:?}",
+            self.height, self.round
+        );
         let mut clean_flag = true;
 
         if let Some(prevote_set) =
             self.vote_cache
-                .get_voteset(self.height, self.height, VoteType::Prevote)
+                .get_voteset(self.height, self.round, VoteType::Prevote)
         {
             // check prevote condition
             for (p, count) in prevote_set.votes_by_proposal {
@@ -281,9 +313,14 @@ where
 
     fn check_precommit(&mut self) -> BftResult<()> {
         let vote = self.receive_vote(VoteType::Precommit)?;
+        println!(
+            "Check precommit at height {:?}, round {:?}",
+            self.height, self.round
+        );
+
         if let Some(prevote_set) =
             self.vote_cache
-                .get_voteset(self.height, self.height, VoteType::Prevote)
+                .get_voteset(self.height, self.round, VoteType::Prevote)
         {
             // check precommit condition
             self.is_above_threshold(prevote_set.count)?;
@@ -356,7 +393,8 @@ where
             FrameRecv::Proposal(p) => return Err(BftError::AbnormalProposal(p)),
             FrameRecv::Vote(v) => vote = v,
         }
-        if vote.vote_type == vote_type || self.byzantine.contains(&vote.proposal) {
+
+        if vote.vote_type != vote_type || self.byzantine.contains(&vote.proposal) {
             // check vote type and vote proposal
             return Err(BftError::IllegalVote(vote));
         }
@@ -409,10 +447,10 @@ where
     }
 
     fn init(&mut self) {
-        let init = self.generate_status();
+        let gensis = self.generate_status();
         self.height += 1;
-        self.storage_msg(Msg::Status(init.clone()));
-        self.function.send(FrameSend::Status(init));
+        self.storage_msg(Msg::Status(gensis.clone()));
+        self.function.send(FrameSend::Status(gensis));
         self.htime = time::get_time();
     }
 }
