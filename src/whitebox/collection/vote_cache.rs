@@ -2,7 +2,7 @@ use crate::whitebox::types::{Address, Hash, Vote, VoteType};
 use lru_cache::LruCache;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct VoteCache {
     pub(crate) votes: LruCache<u64, RoundCollector>,
     pub(crate) prevote_count: HashMap<u64, usize>,
@@ -133,7 +133,7 @@ impl VoteSet {
 }
 
 // round -> step collector
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct RoundCollector {
     pub(crate) round_votes: LruCache<u64, StepCollector>,
 }
@@ -173,7 +173,7 @@ impl RoundCollector {
 }
 
 // step -> voteset
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct StepCollector {
     pub(crate) step_votes: HashMap<VoteType, VoteSet>,
 }

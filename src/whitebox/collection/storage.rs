@@ -1,6 +1,7 @@
 use crate::whitebox::collection::util::*;
 use rusqlite::{params, Connection, Result, NO_PARAMS};
 
+#[derive(Debug)]
 pub(crate) struct Storage(Connection);
 
 impl Storage {

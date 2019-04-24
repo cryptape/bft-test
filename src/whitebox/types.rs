@@ -9,7 +9,7 @@ pub type BftResult<T> = Result<T, BftError>;
 pub type FrameResult<T> = Result<T, FrameError>;
 
 ///
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum FrameRecv {
     ///
     Proposal(Proposal),
@@ -18,7 +18,7 @@ pub enum FrameRecv {
 }
 
 ///
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum FrameSend {
     ///
     Proposal(Proposal),

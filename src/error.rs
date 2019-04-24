@@ -21,9 +21,11 @@ pub enum BftError {
     ///
     IllegalVote(Vote),
     ///
+    GetNoVote(u64, u64, VoteType),
+    ///
     PrecommitErr(u64, u64),
     ///
-    PrecommitDiffPoLC(Vote),
+    PrecommitDiffPoLC(u64, u64),
     ///
     IllegalProposal(u64, u64),
 }
@@ -47,9 +49,15 @@ impl fmt::Display for BftError {
             BftError::PrecommitErr(h, r) => {
                 format!("Precommit Error at Height {:?}, Round {:?}", h, r)
             }
-            BftError::PrecommitDiffPoLC(v) => format!("Precommit Different From PoLC {:?}", v),
+            BftError::PrecommitDiffPoLC(h, r) => format!(
+                "Precommit Different From PoLC at Height {:?}, Round{:?}",
+                h, r
+            ),
             BftError::IllegalProposal(h, r) => {
                 format!("Illegal Proposal at Height {:?}, Round {:?}", h, r)
+            }
+            BftError::GetNoVote(h, r, t) => {
+                format!("Get No {:?} Vote at Height {:?}, Round {:?}", t, h, r)
             }
         };
         f.write_fmt(format_args!("BFT Error ({})!", msg))

@@ -5,11 +5,18 @@ authors = ["Eason Gao <kaoimin@qq.com>", "Cryptape Technologies <contact@cryptap
 edition = "2018"
 
 [dependencies]
-crossbeam = "0.7"
+bft-core = { git = "https://github.com/KaoImin/bft-core.git", rev = "f89352960c11fce338bc568892ca04daef95af81"}
+crossbeam-channel = "0.3"
+env_logger = "0.6"
 rand = "0.5.5"
+log = "0.4"
 lru-cache = "0.1"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 rusqlite = "0.17"
 time = "0.1"
+
+[[example]]
+name = "whitebox_test"
+path = "examples/whitebox_example.rs"
