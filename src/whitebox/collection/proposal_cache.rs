@@ -62,3 +62,37 @@ impl ProposalRoundCollector {
         self.round_proposals.get_mut(&round).cloned()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn generate_proposal(height: u64, round: u64, proposer: Vec<u8>) -> Proposal {
+        Proposal {
+            height,
+            round,
+            content: vec![1, 2, 3],
+            proposer,
+            lock_round: None,
+            lock_votes: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn test_proposal_cache() {
+        let mut cache = ProposalCache::new();
+        assert_eq!(cache.add(generate_proposal(1, 0, vec![4, 5, 6])), true);
+        assert_eq!(cache.add(generate_proposal(1, 0, vec![7, 5, 6])), false);
+        assert_eq!(
+            cache.get_proposal(1, 0),
+            Some(Proposal {
+                height: 1,
+                round: 0,
+                content: vec![1, 2, 3],
+                proposer: vec![4, 5, 6],
+                lock_round: None,
+                lock_votes: Vec::new(),
+            })
+        );
+    }
+}
