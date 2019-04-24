@@ -11,6 +11,7 @@ use crate::whitebox::{
 use rand::{thread_rng, Rng};
 use time::Timespec;
 
+use std::collections::HashSet;
 use std::thread;
 use std::time::Instant;
 
@@ -21,6 +22,7 @@ pub struct Actuator<T> {
     height: u64,
     round: u64,
     lock_round: Option<u64>,
+    lock_votes: Vec<Vote>,
     lock_proposal: Option<Vec<u8>>,
     authority_list: Vec<Address>,
     proposal: Vec<u8>,
@@ -28,6 +30,7 @@ pub struct Actuator<T> {
     storage: Storage,
     vote_cache: VoteCache,
     proposal_cache: ProposalCache,
+    msg_cache: HashSet<FrameRecv>,
     stime: Instant,
     htime: Timespec,
 }
@@ -44,11 +47,12 @@ where
         authority_list: Vec<Address>,
         db_path: &str,
     ) -> Self {
-        let actuator = Actuator {
+        Actuator {
             function,
             height,
             round,
             lock_round: None,
+            lock_votes: Vec::new(),
             lock_proposal: None,
             authority_list,
             proposal: Vec::new(),
@@ -56,22 +60,10 @@ where
             storage: Storage::new(db_path),
             vote_cache: VoteCache::new(),
             proposal_cache: ProposalCache::new(),
+            msg_cache: HashSet::new(),
             stime: Instant::now(),
             htime: Timespec::new(0, 0),
-        };
-
-        let func = actuator.function.clone();
-        let mut proposal_cache = actuator.proposal_cache.clone();
-        let mut vote_cache = actuator.vote_cache.clone();
-
-        thread::spawn(move || loop {
-            match func.recv() {
-                FrameRecv::Proposal(p) => proposal_cache.add(p),
-                FrameRecv::Vote(v) => vote_cache.add(v),
-            };
-        });
-
-        actuator
+        }
     }
 
     /// A function to set a new authority list.
@@ -193,6 +185,7 @@ where
             lock_round,
             lock_votes,
         };
+        self.proposal_cache.add(proposal.clone());
         self.storage_msg(Msg::Proposal(proposal.clone()));
         self.function.send(FrameSend::Proposal(proposal));
     }
@@ -206,8 +199,8 @@ where
             self.lock_proposal.clone().unwrap()
         };
 
-        for i in 0..3 {
-            if prevote[i] == NORMAL {
+        for (i, item) in prevote.iter().enumerate().take(3) {
+            if *item == NORMAL {
                 let vote = Vote {
                     height: self.height,
                     round: self.round,
@@ -219,7 +212,7 @@ where
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
                 self.vote_cache.add(vote);
-            } else if prevote[i] == BYZANTINE {
+            } else if *item == BYZANTINE {
                 let vote = Vote {
                     height: self.height,
                     round: self.round,
@@ -231,10 +224,6 @@ where
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
                 self.vote_cache.add(vote);
-            } else if prevote[i] == OFFLINE {
-                return;
-            } else {
-                panic!("Invalid Test Case! {:?}", prevote);
             }
         }
     }
@@ -246,8 +235,8 @@ where
             self.lock_proposal.clone().unwrap()
         };
 
-        for i in 0..3 {
-            if precommit[i] == NORMAL {
+        for (i, item) in precommit.iter().enumerate().take(3) {
+            if *item == NORMAL {
                 let vote = Vote {
                     height: self.height,
                     round: self.round,
@@ -259,7 +248,7 @@ where
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
                 self.vote_cache.add(vote);
-            } else if precommit[i] == BYZANTINE {
+            } else if *item == BYZANTINE {
                 let vote = Vote {
                     height: self.height,
                     round: self.round,
@@ -271,10 +260,6 @@ where
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
                 self.vote_cache.add(vote);
-            } else if precommit[i] == OFFLINE {
-                return;
-            } else {
-                panic!("Invalid Test Case! {:?}", precommit);
             }
         }
     }
@@ -337,8 +322,9 @@ where
                         &vote.proposal.clone(),
                     );
                     if polc.len() < 3 {
-                        return Err(BftError::PrecommitDiffPoLC(vote));
+                        return Err(BftError::PrecommitDiffPoLC(self.height, self.round));
                     }
+                    self.lock_votes = polc;
                 }
             }
         } else {
@@ -351,6 +337,12 @@ where
         if self.byzantine.contains(&commit.result)
             || self.lock_round.is_none()
             || self.proposal != commit.result
+            || self
+                .proposal_cache
+                .get_proposal(self.height, self.round)
+                .unwrap()
+                .content
+                != commit.result
         {
             return Err(BftError::CommitIncorrect(self.height));
         }
@@ -370,26 +362,47 @@ where
         Ok(())
     }
 
-    fn check_proposal(&self) -> BftResult<()> {
-        match self.function.recv() {
+    fn check_proposal(&mut self) -> BftResult<()> {
+        let mut msg;
+        loop {
+            let tmp = self.function.recv();
+            if !self.msg_cache.contains(&tmp) {
+                msg = tmp;
+                break;
+            }
+        }
+        self.msg_cache.insert(msg.clone());
+
+        match msg {
             FrameRecv::Proposal(p) => Ok(p),
             _ => Err(BftError::IllegalProposal(self.height, self.round)),
         }
         .and_then(|p| {
             if self.lock_round.is_some() {
-                if p.lock_round.is_none() || Some(p.content) != self.lock_proposal {
+                if p.lock_round.is_none() || Some(p.content.clone()) != self.lock_proposal {
                     return Err(BftError::IllegalProposal(self.height, self.round));
                 }
             } else if p.lock_round.is_some() {
                 return Err(BftError::IllegalProposal(self.height, self.round));
             }
+            self.proposal_cache.add(p);
             Ok(())
         })
     }
 
     fn receive_vote(&mut self, vote_type: VoteType) -> BftResult<Vote> {
+        let mut msg;
         let mut vote;
-        match self.function.recv() {
+        loop {
+            let tmp = self.function.recv();
+            if !self.msg_cache.contains(&tmp) {
+                msg = tmp;
+                break;
+            }
+        }
+        self.msg_cache.insert(msg.clone());
+
+        match msg {
             FrameRecv::Proposal(p) => return Err(BftError::AbnormalProposal(p)),
             FrameRecv::Vote(v) => vote = v,
         }
@@ -419,6 +432,7 @@ where
     fn clean_polc(&mut self) {
         self.proposal = Vec::new();
         self.lock_round = None;
+        self.lock_votes.clear();
         self.lock_proposal = None;
     }
 
@@ -431,6 +445,7 @@ where
 
     fn goto_next_height(&mut self) {
         self.vote_cache.clear_prevote_count();
+        self.msg_cache.clear();
         self.clean_polc();
         self.round = 0;
         self.height += 1;
