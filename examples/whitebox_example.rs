@@ -3,11 +3,10 @@ pub mod util;
 use bft_core::{types::*, Core};
 use bft_test::whitebox::actuator::Actuator;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-// use env_logger::Builder;
-// use log::LevelFilter::Info;
-use util::whitebox_util::{generate_authority, TestSupport};
-
+use env_logger::Builder;
+use log::LevelFilter::Info;
 use std::thread;
+use util::whitebox_util::{generate_authority, TestSupport};
 
 struct BftTest {
     recv4test: Receiver<BftMsg>,
@@ -68,15 +67,12 @@ impl BftTest {
 }
 
 fn main() {
-    // let mut builder = Builder::from_default_env();
-    // builder.filter(None, Info).init();
+    let mut builder = Builder::from_default_env();
+    builder.filter(None, Info).init();
 
     let (s, r, r_commit) = BftTest::start();
     let ts = TestSupport::new(s, r, r_commit);
     let mut test = Actuator::new(ts, 0, 0, generate_authority(), "db/test.db");
-    let test_case = bft_test::test_case::one_offline_cases();
-    let _ = test
-        .proc_test(test_case)
-        .map_err(|err| panic!("bft error {:?}", err));
+    let _ = test.all_test().map_err(|err| panic!("bft error {:?}", err));
     ::std::process::exit(0);
 }
