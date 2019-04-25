@@ -82,12 +82,12 @@ pub fn two_byzantine_one_offline() -> BftTest {
 pub fn round_leap() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..3 {
-        cases.push([1,2,2,3,3,3]);
+        cases.push([1, 2, 2, 3, 3, 3]);
         cases.push(SHOULD_NOT_COMMIT);
         cases.push(NULL_ROUND);
         cases.push(NULL_ROUND);
         cases.push(NULL_ROUND);
-        cases.push([1,1,1,1,1,1]);
+        cases.push([1, 1, 1, 1, 1, 1]);
         cases.push(SHOULD_COMMIT);
     }
     cases
