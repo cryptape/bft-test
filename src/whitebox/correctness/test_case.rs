@@ -79,7 +79,7 @@ pub fn two_byzantine_one_offline() -> BftTest {
 }
 
 ///
-pub fn round_leap() -> BftTest {
+pub fn round_leap_cases() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..3 {
         cases.push([1, 2, 2, 3, 3, 3]);
@@ -129,6 +129,7 @@ pub fn proposal_with_lock() -> BftTest {
 
 pub(crate) fn all_cases() -> HashMap<String, BftTest> {
     let mut test_cases = HashMap::new();
+
     test_cases
         .entry("test no byzantine case".to_string())
         .or_insert_with(no_byzantine_cases);
@@ -144,9 +145,6 @@ pub(crate) fn all_cases() -> HashMap<String, BftTest> {
     test_cases
         .entry("test two byzantine and one offline case".to_string())
         .or_insert_with(two_byzantine_one_offline);
-    test_cases
-        .entry("test round leap".to_string())
-        .or_insert_with(round_leap);
     test_cases
         .entry("test lock proposal".to_string())
         .or_insert_with(lock_proposal);
