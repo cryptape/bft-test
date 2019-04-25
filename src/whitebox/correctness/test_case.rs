@@ -1,6 +1,7 @@
 use crate::whitebox::correctness::util::*;
 use rand::random;
 use std::collections::HashMap;
+use std::time::Duration;
 
 /// A basic test unit.
 pub type BftTestUnit = [u8; 6];
@@ -10,6 +11,7 @@ pub type BftTest = Vec<BftTestUnit>;
 pub(crate) const OFFLINE: u8 = 0;
 pub(crate) const NORMAL: u8 = 1;
 pub(crate) const BYZANTINE: u8 = 2;
+pub(crate) const NIL: u8 = 3;
 pub(crate) const NULL_ROUND: [u8; 6] = [7, 7, 7, 7, 7, 7];
 pub(crate) const SHOULD_COMMIT: [u8; 6] = [8, 8, 8, 8, 8, 8];
 pub(crate) const SHOULD_NOT_COMMIT: [u8; 6] = [9, 9, 9, 9, 9, 9];
@@ -55,23 +57,9 @@ pub fn one_byzantine_cases() -> BftTest {
 ///
 pub fn two_byzantine_cases() -> BftTest {
     let mut cases = Vec::new();
-    for _ in 0..99 {
-        cases.push(rand_two_attribute(BYZANTINE, NORMAL));
+    for _ in 0..20 {
+        cases.push(rand_two_attribute(BYZANTINE, NORMAL, NORMAL));
         cases.push(SHOULD_NOT_COMMIT);
-    }
-    cases.push([1, 1, 1, 1, 1, 1]);
-    cases.push(SHOULD_COMMIT);
-    cases
-}
-
-///
-pub fn two_offline_cases() -> BftTest {
-    let mut cases = Vec::new();
-    for _ in 0..10 {
-        cases.push(rand_two_attribute(OFFLINE, NORMAL));
-        cases.push(SHOULD_NOT_COMMIT);
-        cases.push(NULL_ROUND);
-        cases.push(NULL_ROUND);
     }
     cases.push([1, 1, 1, 1, 1, 1]);
     cases.push(SHOULD_COMMIT);
@@ -82,7 +70,7 @@ pub fn two_offline_cases() -> BftTest {
 pub fn two_byzantine_one_offline() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..10 {
-        cases.push(rand_two_attribute(BYZANTINE, OFFLINE));
+        cases.push(rand_two_attribute(BYZANTINE, OFFLINE, NIL));
         cases.push(SHOULD_NOT_COMMIT);
     }
     cases.push([1, 1, 1, 1, 1, 1]);
@@ -95,10 +83,10 @@ pub fn round_leap() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..10 {
         for _ in 0..random::<u8>() {
-            cases.push(rand_two_attribute(OFFLINE, NORMAL));
+            cases.push(rand_two_attribute(OFFLINE, NORMAL, NIL));
             cases.push(SHOULD_NOT_COMMIT);
         }
-        cases.push(rand_two_attribute(OFFLINE, NORMAL));
+        cases.push(rand_two_attribute(OFFLINE, NORMAL, NIL));
         cases.push(SHOULD_NOT_COMMIT);
         cases.push([1, 1, 1, 1, 1, 1]);
         cases.push(SHOULD_COMMIT);
@@ -154,9 +142,6 @@ pub(crate) fn all_cases() -> HashMap<String, BftTest> {
     test_cases
         .entry("test two byzantine case".to_string())
         .or_insert_with(two_byzantine_cases);
-    test_cases
-        .entry("test two offline case".to_string())
-        .or_insert_with(two_offline_cases);
     test_cases
         .entry("test two byzantine and one case".to_string())
         .or_insert_with(two_byzantine_one_offline);

@@ -224,6 +224,18 @@ where
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
                 self.vote_cache.add(vote);
+            } else if *item == NIL {
+                let vote = Vote {
+                    height: self.height,
+                    round: self.round,
+                    vote_type: VoteType::Prevote,
+                    proposal: Vec::new(),
+                    voter: self.authority_list[i + 1].clone(),
+                };
+
+                self.storage_msg(Msg::Vote(vote.clone()));
+                self.function.send(FrameSend::Vote(vote.clone()));
+                self.vote_cache.add(vote);
             }
         }
     }
@@ -254,6 +266,18 @@ where
                     round: self.round,
                     vote_type: VoteType::Precommit,
                     proposal: self.byzantine[i].clone(),
+                    voter: self.authority_list[i + 1].clone(),
+                };
+
+                self.storage_msg(Msg::Vote(vote.clone()));
+                self.function.send(FrameSend::Vote(vote.clone()));
+                self.vote_cache.add(vote);
+            } else if *item == NIL {
+                let vote = Vote {
+                    height: self.height,
+                    round: self.round,
+                    vote_type: VoteType::Prevote,
+                    proposal: Vec::new(),
                     voter: self.authority_list[i + 1].clone(),
                 };
 
