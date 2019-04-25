@@ -92,7 +92,7 @@ where
             } else if case == &NULL_ROUND {
                 self.goto_next_round();
             } else if case == &SHOULD_NOT_COMMIT {
-                thread::sleep(::std::time::Duration::from_micros(100));
+                thread::sleep(::std::time::Duration::from_millis(150));
                 if self.function.try_get_commit().is_some() {
                     return Err(BftError::CommitInvalid(self.height));
                 }
@@ -108,7 +108,7 @@ where
                     self.function.send(FrameSend::Feed(feed));
                     self.check_proposal()?;
                 } else if proposer < self.authority_list.len() {
-                    self.generate_proposal(proposer, self.lock_round, Vec::new());
+                    self.generate_proposal(proposer, self.lock_round, self.lock_votes.clone());
                 } else {
                     panic!("Proposer index beyond authority list!");
                 }
@@ -169,10 +169,14 @@ where
         lock_votes: Vec<Vote>,
     ) {
         let mut proposal = vec![0, 0, 0, 0, 0, 0];
-        while self.byzantine.contains(&proposal) {
-            let mut rng = thread_rng();
-            for ii in proposal.iter_mut() {
-                *ii = rng.gen();
+        if self.lock_proposal.is_some() {
+            proposal = self.lock_proposal.clone().unwrap();
+        } else {
+            while self.byzantine.contains(&proposal) {
+                let mut rng = thread_rng();
+                for ii in proposal.iter_mut() {
+                    *ii = rng.gen();
+                }
             }
         }
         self.proposal = proposal.clone();
@@ -276,7 +280,7 @@ where
                 let vote = Vote {
                     height: self.height,
                     round: self.round,
-                    vote_type: VoteType::Prevote,
+                    vote_type: VoteType::Precommit,
                     proposal: Vec::new(),
                     voter: self.authority_list[i + 1].clone(),
                 };
@@ -404,6 +408,7 @@ where
         .and_then(|p| {
             if self.lock_round.is_some() {
                 if p.lock_round.is_none() || Some(p.content.clone()) != self.lock_proposal {
+                    println!("{:?}, {:?}", p.content.clone(), self.lock_proposal);
                     return Err(BftError::IllegalProposal(self.height, self.round));
                 }
             } else if p.lock_round.is_some() {

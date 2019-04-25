@@ -1,7 +1,7 @@
 use crate::whitebox::correctness::util::*;
 use rand::random;
 use std::collections::HashMap;
-use std::time::Duration;
+// use std::time::Duration;
 
 /// A basic test unit.
 pub type BftTestUnit = [u8; 6];
@@ -81,14 +81,13 @@ pub fn two_byzantine_one_offline() -> BftTest {
 ///
 pub fn round_leap() -> BftTest {
     let mut cases = Vec::new();
-    for _ in 0..10 {
-        for _ in 0..random::<u8>() {
-            cases.push(rand_two_attribute(OFFLINE, NORMAL, NIL));
-            cases.push(SHOULD_NOT_COMMIT);
-        }
-        cases.push(rand_two_attribute(OFFLINE, NORMAL, NIL));
+    for _ in 0..3 {
+        cases.push([1,2,2,3,3,3]);
         cases.push(SHOULD_NOT_COMMIT);
-        cases.push([1, 1, 1, 1, 1, 1]);
+        cases.push(NULL_ROUND);
+        cases.push(NULL_ROUND);
+        cases.push(NULL_ROUND);
+        cases.push([1,1,1,1,1,1]);
         cases.push(SHOULD_COMMIT);
     }
     cases
@@ -114,13 +113,13 @@ pub fn lock_proposal() -> BftTest {
 pub fn proposal_with_lock() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..10 {
-        cases.push([1, 1, 0, 1, 0, 0]);
+        cases.push([1, 3, 0, 1, 3, 3]);
         cases.push(SHOULD_NOT_COMMIT);
-        cases.push([1, 1, 1, 1, 0, 0]);
+        cases.push([1, 3, 1, 1, 3, 3]);
         cases.push(SHOULD_NOT_COMMIT);
-        cases.push([1, 1, 0, 1, 0, 0]);
+        cases.push([1, 3, 0, 1, 3, 3]);
         cases.push(SHOULD_NOT_COMMIT);
-        cases.push([0, 1, 1, 1, 0, 0]);
+        cases.push([0, 3, 1, 1, 3, 3]);
         cases.push(SHOULD_NOT_COMMIT);
         cases.push([1, 1, 1, 1, 1, 1]);
         cases.push(SHOULD_COMMIT);
