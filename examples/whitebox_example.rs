@@ -77,7 +77,13 @@ fn main() {
 
     let (s, r, r_commit) = BftTest::start();
     let ts = TestSupport::new(s, r, r_commit);
-    let mut test = Actuator::new(ts, INIT_HEIGHT, INIT_ROUND, generate_authority(), "db/test.db");
+    let mut test = Actuator::new(
+        ts,
+        INIT_HEIGHT,
+        INIT_ROUND,
+        generate_authority(),
+        "db/test.db",
+    );
     // let case = bft_test::test_case::two_byzantine_one_offline();
     // let _ = test.proc_test(case).map_err(|err| panic!("bft error {:?}", err));
     let _ = test.all_test().map_err(|err| panic!("bft error {:?}", err));
