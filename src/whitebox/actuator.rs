@@ -130,6 +130,8 @@ where
     pub fn all_test(&mut self) -> BftResult<()> {
         let all_test_cases = all_cases();
         info!("Start all BFT test cases");
+        info!("Do test test round leap");
+        self.proc_test(round_leap_cases())?;
         for (test_name, test_case) in all_test_cases.into_iter() {
             info!("Do test {:?}", test_name);
             self.proc_test(test_case)?;
