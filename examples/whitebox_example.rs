@@ -8,6 +8,10 @@ use log::LevelFilter::Info;
 use std::thread;
 use util::whitebox_util::{generate_authority, TestSupport};
 
+const INIT_HEIGHT: u64 = 0;
+const INIT_ROUND: u64 = 0;
+
+#[derive(Clone, Debug)]
 struct BftTest {
     recv4test: Receiver<BftMsg>,
     recv4core: Receiver<BftMsg>,
@@ -52,6 +56,7 @@ impl BftTest {
                     println!("Send {:?} to Test", test_msg.clone());
                     match test_msg {
                         BftMsg::Commit(c) => self.send_commit.send(c).unwrap(),
+                        BftMsg::GetProposalRequest(_h) => return,
                         _ => self.send2test.send(test_msg.clone()).unwrap(),
                     }
                 }
@@ -72,7 +77,15 @@ fn main() {
 
     let (s, r, r_commit) = BftTest::start();
     let ts = TestSupport::new(s, r, r_commit);
-    let mut test = Actuator::new(ts, 0, 0, generate_authority(), "db/test.db");
+    let mut test = Actuator::new(
+        ts,
+        INIT_HEIGHT,
+        INIT_ROUND,
+        generate_authority(),
+        "db/test.db",
+    );
+    // let case = bft_test::test_case::two_byzantine_one_offline();
+    // let _ = test.proc_test(case).map_err(|err| panic!("bft error {:?}", err));
     let _ = test.all_test().map_err(|err| panic!("bft error {:?}", err));
     ::std::process::exit(0);
 }

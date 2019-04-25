@@ -142,7 +142,7 @@ pub(crate) fn all_cases() -> HashMap<String, BftTest> {
         .entry("test two byzantine case".to_string())
         .or_insert_with(two_byzantine_cases);
     test_cases
-        .entry("test two byzantine and one case".to_string())
+        .entry("test two byzantine and one offline case".to_string())
         .or_insert_with(two_byzantine_one_offline);
     test_cases
         .entry("test round leap".to_string())
