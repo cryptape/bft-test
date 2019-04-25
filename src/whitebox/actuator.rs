@@ -7,7 +7,7 @@ use crate::whitebox::{
     types::*,
 };
 
-// use log::{debug, info};
+use log::{debug, info};
 use rand::{thread_rng, Rng};
 use time::Timespec;
 
@@ -82,7 +82,7 @@ where
                     self.check_commit(commit)?;
                     let status = self.generate_status();
                     self.function.send(FrameSend::Status(status));
-                    println!(
+                    debug!(
                         "Height {:?}, use time {:?}",
                         self.height,
                         time::get_time() - self.htime
@@ -119,7 +119,7 @@ where
                 self.check_precommit()?;
             }
         }
-        println!(
+        info!(
             "Test success, total test time: {:?}",
             Instant::now() - self.stime
         );
@@ -129,11 +129,12 @@ where
     ///
     pub fn all_test(&mut self) -> BftResult<()> {
         let all_test_cases = all_cases();
+        info!("Start all BFT test cases");
         for (test_name, test_case) in all_test_cases.into_iter() {
-            println!("Do test {:?}", test_name);
+            info!("Do test {:?}", test_name);
             self.proc_test(test_case)?;
         }
-        println!("All test cases pass");
+        info!("All BFT test cases pass");
         Ok(())
     }
 
@@ -168,17 +169,18 @@ where
         lock_round: Option<u64>,
         lock_votes: Vec<Vote>,
     ) {
-        let mut proposal = vec![0, 0, 0, 0, 0, 0];
-        if self.lock_proposal.is_some() {
-            proposal = self.lock_proposal.clone().unwrap();
+        let proposal = if self.lock_proposal.is_some() {
+            self.lock_proposal.clone().unwrap()
         } else {
-            while self.byzantine.contains(&proposal) {
+            let mut tmp = vec![0, 0, 0, 0, 0, 0];
+            while self.byzantine.contains(&tmp) {
                 let mut rng = thread_rng();
-                for ii in proposal.iter_mut() {
+                for ii in tmp.iter_mut() {
                     *ii = rng.gen();
                 }
             }
-        }
+            tmp
+        };
         self.proposal = proposal.clone();
 
         let proposal = Proposal {
@@ -191,12 +193,11 @@ where
         };
         self.proposal_cache.add(proposal.clone());
         self.storage_msg(Msg::Proposal(proposal.clone()));
-        self.function.send(FrameSend::Proposal(proposal));
+        self.function.send(FrameSend::Proposal(proposal.clone()));
+        debug!("Send proposal {:?}", proposal);
     }
 
     fn generate_prevote(&mut self, prevote: Vec<u8>) {
-        println!("{:?}", prevote.clone());
-
         let proposal = if self.lock_proposal.is_none() {
             self.proposal.clone()
         } else {
@@ -215,7 +216,8 @@ where
 
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
-                self.vote_cache.add(vote);
+                self.vote_cache.add(vote.clone());
+                debug!("Send normal prevote {:?}", vote);
             } else if *item == BYZANTINE {
                 let vote = Vote {
                     height: self.height,
@@ -227,7 +229,8 @@ where
 
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
-                self.vote_cache.add(vote);
+                self.vote_cache.add(vote.clone());
+                debug!("Send byzantine prevote {:?}", vote);
             } else if *item == NIL {
                 let vote = Vote {
                     height: self.height,
@@ -239,7 +242,8 @@ where
 
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
-                self.vote_cache.add(vote);
+                self.vote_cache.add(vote.clone());
+                debug!("Send nil prevote {:?}", vote);
             }
         }
     }
@@ -263,7 +267,8 @@ where
 
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
-                self.vote_cache.add(vote);
+                self.vote_cache.add(vote.clone());
+                debug!("Send normal precommit {:?}", vote);
             } else if *item == BYZANTINE {
                 let vote = Vote {
                     height: self.height,
@@ -275,7 +280,8 @@ where
 
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
-                self.vote_cache.add(vote);
+                self.vote_cache.add(vote.clone());
+                debug!("Send byzantine precommit {:?}", vote);
             } else if *item == NIL {
                 let vote = Vote {
                     height: self.height,
@@ -287,14 +293,15 @@ where
 
                 self.storage_msg(Msg::Vote(vote.clone()));
                 self.function.send(FrameSend::Vote(vote.clone()));
-                self.vote_cache.add(vote);
+                self.vote_cache.add(vote.clone());
+                debug!("Send nil precommit {:?}", vote);
             }
         }
     }
 
     fn check_prevote(&mut self) -> BftResult<()> {
         let vote = self.receive_vote(VoteType::Prevote)?;
-        println!(
+        debug!(
             "Check prevote at height {:?}, round {:?}",
             self.height, self.round
         );
@@ -326,7 +333,7 @@ where
 
     fn check_precommit(&mut self) -> BftResult<()> {
         let vote = self.receive_vote(VoteType::Precommit)?;
-        println!(
+        debug!(
             "Check precommit at height {:?}, round {:?}",
             self.height, self.round
         );
@@ -362,6 +369,11 @@ where
     }
 
     fn check_commit(&mut self, commit: Commit) -> BftResult<()> {
+        info!(
+            "Check commit at height {:?}, round {:?}",
+            self.height, self.round
+        );
+
         if self.byzantine.contains(&commit.result)
             || self.lock_round.is_none()
             || self.proposal != commit.result
@@ -391,6 +403,11 @@ where
     }
 
     fn check_proposal(&mut self) -> BftResult<()> {
+        info!(
+            "Check proposal at height {:?}, round{:?}",
+            self.height, self.round
+        );
+
         let mut msg;
         loop {
             let tmp = self.function.recv();
@@ -408,7 +425,6 @@ where
         .and_then(|p| {
             if self.lock_round.is_some() {
                 if p.lock_round.is_none() || Some(p.content.clone()) != self.lock_proposal {
-                    println!("{:?}, {:?}", p.content.clone(), self.lock_proposal);
                     return Err(BftError::IllegalProposal(self.height, self.round));
                 }
             } else if p.lock_round.is_some() {
@@ -442,6 +458,7 @@ where
         }
         self.vote_cache.add(vote.clone());
         self.storage_msg(Msg::Vote(vote.clone()));
+        debug!("Receive vote {:?}", vote.clone());
         Ok(vote)
     }
 
@@ -479,6 +496,7 @@ where
         self.round = 0;
         self.height += 1;
         self.htime = time::get_time();
+        info!("Go to next height");
     }
 
     fn goto_next_round(&mut self) {
@@ -491,6 +509,7 @@ where
     }
 
     fn init(&mut self) {
+        info!("Init a unit test");
         let gensis = self.generate_status();
         self.height += 1;
         self.storage_msg(Msg::Status(gensis.clone()));
