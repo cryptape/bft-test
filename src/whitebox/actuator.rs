@@ -134,7 +134,8 @@ where
         // self.proc_test(round_leap_cases())?;
         for (test_name, test_case) in all_test_cases.into_iter() {
             info!("Do test {:?}", test_name);
-            let _ = self.proc_test(test_case)
+            let _ = self
+                .proc_test(test_case)
                 .map_err(|err| panic!("Error in test {:?}: {:?}", test_name, err));
         }
         info!("All BFT test cases pass");
