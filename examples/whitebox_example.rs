@@ -72,8 +72,8 @@ impl BftTest {
 }
 
 fn main() {
-    // let mut builder = Builder::from_default_env();
-    // builder.filter(None, Info).init();
+    let mut builder = Builder::from_default_env();
+    builder.filter(None, Info).init();
 
     let (s, r, r_commit) = BftTest::start();
     let ts = TestSupport::new(s, r, r_commit);
