@@ -72,8 +72,8 @@ impl BftTest {
 }
 
 fn main() {
-    let mut builder = Builder::from_default_env();
-    builder.filter(None, Info).init();
+    // let mut builder = Builder::from_default_env();
+    // builder.filter(None, Info).init();
 
     let (s, r, r_commit) = BftTest::start();
     let ts = TestSupport::new(s, r, r_commit);
@@ -84,8 +84,7 @@ fn main() {
         generate_authority(),
         "db/test.db",
     );
-    // let case = bft_test::test_case::two_byzantine_one_offline();
+    // let case = bft_test::test_case::lock_proposal();
     // let _ = test.proc_test(case).map_err(|err| panic!("bft error {:?}", err));
     let _ = test.all_test().map_err(|err| panic!("bft error {:?}", err));
-    ::std::process::exit(0);
 }

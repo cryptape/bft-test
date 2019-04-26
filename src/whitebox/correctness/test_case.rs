@@ -149,9 +149,6 @@ pub(crate) fn all_cases() -> HashMap<String, BftTest> {
         .entry("test lock proposal".to_string())
         .or_insert_with(lock_proposal);
     test_cases
-        .entry("test lock proposal".to_string())
-        .or_insert_with(proposal_with_lock);
-    test_cases
 }
 
 #[cfg(test)]
