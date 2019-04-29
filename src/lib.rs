@@ -6,10 +6,10 @@
 
 /// Blackbox testing module.
 pub mod blackbox;
-///
+/// Error module.
 pub mod error;
 /// WhiteBox testing module.
 pub mod whitebox;
 
+/// Re-pub whitebox test cases;
 pub use crate::whitebox::correctness::test_case;
-pub use crossbeam_channel;
