@@ -24,7 +24,7 @@ pub(crate) fn byzantine_proposal() -> Vec<Vec<u8>> {
     ]
 }
 
-///
+/// A function to generate no byzantine test cases.
 pub fn no_byzantine_cases() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..100 {
@@ -34,7 +34,7 @@ pub fn no_byzantine_cases() -> BftTest {
     cases
 }
 
-///
+/// A function to generate one node offline test cases.
 pub fn one_offline_cases() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..100 {
@@ -44,7 +44,7 @@ pub fn one_offline_cases() -> BftTest {
     cases
 }
 
-///
+/// A function to generate one byzantine node test cases.
 pub fn one_byzantine_cases() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..100 {
@@ -54,7 +54,7 @@ pub fn one_byzantine_cases() -> BftTest {
     cases
 }
 
-///
+/// A function to generate two byzantine node test cases.
 pub fn two_byzantine_cases() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..20 {
@@ -66,7 +66,7 @@ pub fn two_byzantine_cases() -> BftTest {
     cases
 }
 
-///
+/// A function to generate two byzantine node and one offline node test cases.
 pub fn two_byzantine_one_offline() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..10 {
@@ -78,7 +78,7 @@ pub fn two_byzantine_one_offline() -> BftTest {
     cases
 }
 
-///
+/// A function to generate round leap test cases.
 pub fn round_leap_cases() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..3 {
@@ -93,7 +93,7 @@ pub fn round_leap_cases() -> BftTest {
     cases
 }
 
-///
+/// A function to generate proposal with lock test cases.
 pub fn lock_proposal() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..10 {
@@ -109,7 +109,7 @@ pub fn lock_proposal() -> BftTest {
     cases
 }
 
-///
+///  A function to generate proposal with lock test cases.
 pub fn proposal_with_lock() -> BftTest {
     let mut cases = Vec::new();
     for _ in 0..10 {

@@ -75,7 +75,7 @@ where
     pub fn proc_test(&mut self, cases: BftTest) -> BftResult<()> {
         self.init();
         for case in cases.iter() {
-            debug!("{:?}", case);
+            println!("{:?}", case);
             if case == &SHOULD_COMMIT {
                 thread::sleep(::std::time::Duration::from_millis(120));
                 if let Some(commit) = self.function.try_get_commit() {
