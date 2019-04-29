@@ -12,4 +12,3 @@ pub mod error;
 pub mod whitebox;
 
 pub use crate::whitebox::correctness::test_case;
-pub use crossbeam_channel;
