@@ -89,6 +89,8 @@ where
                         time::get_time() - self.htime
                     );
                     self.goto_next_height();
+                } else {
+                    return Err(BftError::NoCommit(self.height));
                 }
             } else if case == &NULL_ROUND {
                 self.goto_next_round();
@@ -126,7 +128,7 @@ where
         Ok(())
     }
 
-    ///
+    /// A function to do all whitebox tests.
     pub fn all_test(&mut self) -> BftResult<()> {
         let all_test_cases = all_cases();
         info!("Start all BFT test cases");

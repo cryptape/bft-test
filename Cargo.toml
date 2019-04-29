@@ -16,7 +16,7 @@ rusqlite = "0.17"
 time = "0.1"
 
 [dev-dependencies]
-bft-core = { git = "https://github.com/KaoImin/bft-core.git", branch = "develop"}
+bft-core = { git = "https://github.com/KaoImin/bft-core.git", rev = "4732f5022ef5d324bf849439888919a14baf9ae2"}
 env_logger = "0.6"
 
 [[example]]
