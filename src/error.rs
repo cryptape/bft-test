@@ -28,6 +28,8 @@ pub enum BftError {
     PrecommitDiffPoLC(u64, u64),
     ///
     IllegalProposal(u64, u64),
+    ///
+    NoCommit(u64),
 }
 
 impl fmt::Display for BftError {
@@ -59,6 +61,7 @@ impl fmt::Display for BftError {
             BftError::GetNoVote(h, r, t) => {
                 format!("Get No {:?} Vote at Height {:?}, Round {:?}", t, h, r)
             }
+            BftError::NoCommit(h) => format!("No commit at height {:?}", h),
         };
         f.write_fmt(format_args!("BFT Error ({})!", msg))
     }

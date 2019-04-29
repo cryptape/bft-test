@@ -27,6 +27,7 @@ pub struct Actuator<T> {
     authority_list: Vec<Address>,
     proposal: Vec<u8>,
     byzantine: Vec<Vec<u8>>,
+    sleep_ms: u64,
     storage: Storage,
     vote_cache: VoteCache,
     proposal_cache: ProposalCache,
@@ -39,7 +40,10 @@ impl<T> Actuator<T>
 where
     T: Support + Clone + Send + 'static,
 {
-    /// A function to create a new testing acutator.
+    /// A function to create a new testing acutator. The `height` is the initial height
+    /// and the `round` is the initial round. The `authority_list` should be a `Vec` with
+    /// length 4. The first one in authority list should be the address of the testing
+    /// node. The `db_path` is the path of database.
     pub fn new(
         function: T,
         height: u64,
@@ -57,6 +61,7 @@ where
             authority_list,
             proposal: Vec::new(),
             byzantine: byzantine_proposal(),
+            sleep_ms: 150,
             storage: Storage::new(db_path),
             vote_cache: VoteCache::new(),
             proposal_cache: ProposalCache::new(),
@@ -66,18 +71,28 @@ where
         }
     }
 
-    /// A function to set a new authority list.
+    /// A function to set a new authority list. Likewise it the new one should be with
+    /// length 4, and the first one should be the address of the testing node.
     pub fn set_authority_list(&mut self, authority_list: Vec<Address>) {
         self.authority_list = authority_list;
     }
 
-    /// A function to do whitebox testing with test cases input.
+    /// A function to set a new sleep time as millisecond. The sleep time is the duration
+    /// time after send precommit votes before commit. If the testing node is wait for
+    /// more votes before commit when the framework get commit, it may return error of no
+    /// commit. Use this function to set a longer duration. The default duration is 150 milliseconds.
+    pub fn set_sleep_time(&mut self, ms: u64) {
+        self.sleep_ms = ms;
+    }
+
+    /// A function to do whitebox testing with test cases input. The test cases are generated
+    /// in `test_case`.
     pub fn proc_test(&mut self, cases: BftTest) -> BftResult<()> {
         self.init();
         for case in cases.iter() {
             println!("{:?}", case);
             if case == &SHOULD_COMMIT {
-                thread::sleep(::std::time::Duration::from_millis(120));
+                thread::sleep(::std::time::Duration::from_millis(self.sleep_ms));
                 if let Some(commit) = self.function.try_get_commit() {
                     self.storage_msg(Msg::Commit(commit.clone()));
                     self.check_commit(commit)?;
@@ -89,6 +104,8 @@ where
                         time::get_time() - self.htime
                     );
                     self.goto_next_height();
+                } else {
+                    return Err(BftError::NoCommit(self.height));
                 }
             } else if case == &NULL_ROUND {
                 self.goto_next_round();
@@ -126,7 +143,7 @@ where
         Ok(())
     }
 
-    ///
+    /// A function to do all whitebox tests.
     pub fn all_test(&mut self) -> BftResult<()> {
         let all_test_cases = all_cases();
         info!("Start all BFT test cases");
