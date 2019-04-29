@@ -106,7 +106,7 @@ pub trait Support {
     fn send(&self, msg: FrameSend);
     /// Receive a `FrameRecv` message from the testing node.
     fn recv(&self) -> FrameRecv;
-    /// Try once to get a commit message from the testing node. 
+    /// Try once to get a commit message from the testing node.
     /// If it does not commit, return `None`.
     fn try_get_commit(&self) -> Option<Commit>;
     /// Stop the testing node.
