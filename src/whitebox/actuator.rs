@@ -40,7 +40,10 @@ impl<T> Actuator<T>
 where
     T: Support + Clone + Send + 'static,
 {
-    /// A function to create a new testing acutator.
+    /// A function to create a new testing acutator. The `height` is the initial height
+    /// and the `round` is the initial round. The `authority_list` should be a `Vec` with
+    /// length 4. The first one in authority list should be the address of the testing
+    /// node. The `db_path` is the path of database.
     pub fn new(
         function: T,
         height: u64,
@@ -68,7 +71,8 @@ where
         }
     }
 
-    /// A function to set a new authority list.
+    /// A function to set a new authority list. Likewise it the new one should be with
+    /// length 4, and the first one should be the address of the testing node.
     pub fn set_authority_list(&mut self, authority_list: Vec<Address>) {
         self.authority_list = authority_list;
     }
@@ -81,7 +85,17 @@ where
         self.sleep_ms = ms;
     }
 
-    /// A function to do whitebox testing with test cases input.
+    /// A function to do whitebox testing with test cases input. The test cases are generated
+    /// in [test_case](../src/whitebox/correctness/test_case).
+    /// ```rust
+    /// use bft_test::{correctness, whitebox::actuator::Actuator};
+    ///
+    /// let actuator = Actuator::new(support, h, r, authority, db_path);
+    /// let case = correctness::one_byzantine_cases();
+    ///
+    /// actuator.proc_test(case).unwrap();
+    /// ```
+    ///
     pub fn proc_test(&mut self, cases: BftTest) -> BftResult<()> {
         self.init();
         for case in cases.iter() {
@@ -139,6 +153,15 @@ where
     }
 
     /// A function to do all whitebox tests.
+    ///
+    /// ```rust
+    /// use bft_test::{correctness, whitebox::actuator::Actuator};
+    ///
+    /// let actuator = Actuator::new(support, h, r, authority, db_path);
+    ///
+    /// actuator.all_test().unwrap();
+    /// ```
+    ///
     pub fn all_test(&mut self) -> BftResult<()> {
         let all_test_cases = all_cases();
         info!("Start all BFT test cases");
