@@ -27,6 +27,7 @@ pub struct Actuator<T> {
     authority_list: Vec<Address>,
     proposal: Vec<u8>,
     byzantine: Vec<Vec<u8>>,
+    sleep_ms: u64,
     storage: Storage,
     vote_cache: VoteCache,
     proposal_cache: ProposalCache,
@@ -57,6 +58,7 @@ where
             authority_list,
             proposal: Vec::new(),
             byzantine: byzantine_proposal(),
+            sleep_ms: 150,
             storage: Storage::new(db_path),
             vote_cache: VoteCache::new(),
             proposal_cache: ProposalCache::new(),
@@ -71,13 +73,21 @@ where
         self.authority_list = authority_list;
     }
 
+    /// A function to set a new sleep time as millisecond. The sleep time is the duration
+    /// time after send precommit votes before commit. If the testing node is wait for
+    /// more votes before commit when the framework get commit, it may return error of no
+    /// commit. Use this function to set a longer duration. The default duration is 150 milliseconds.
+    pub fn set_sleep_time(&mut self, ms: u64) {
+        self.sleep_ms = ms;
+    }
+
     /// A function to do whitebox testing with test cases input.
     pub fn proc_test(&mut self, cases: BftTest) -> BftResult<()> {
         self.init();
         for case in cases.iter() {
             println!("{:?}", case);
             if case == &SHOULD_COMMIT {
-                thread::sleep(::std::time::Duration::from_millis(120));
+                thread::sleep(::std::time::Duration::from_millis(self.sleep_ms));
                 if let Some(commit) = self.function.try_get_commit() {
                     self.storage_msg(Msg::Commit(commit.clone()));
                     self.check_commit(commit)?;
