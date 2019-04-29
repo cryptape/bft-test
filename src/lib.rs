@@ -1,6 +1,6 @@
 //! A common test framework for BFT consensus algorithm.
 //!
-//!
+//! 
 
 #![deny(missing_docs)]
 
